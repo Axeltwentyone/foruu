@@ -1,62 +1,47 @@
-# Lettre — page à usage unique
+# Nos jours
 
-Une feuille de papier vieilli, du texte manuscrit qui apparaît doucement au scroll. Rien d'autre.
+Un message par jour, du 21 septembre au 31 décembre. Chaque jour se débloque à minuit dans son fuseau horaire ; les jours futurs ne quittent jamais le serveur.
 
-## Modifier le contenu
+## Écrire les jours
 
-Tout est dans [src/content.js](src/content.js) — cherche les `[À REMPLACER]` :
+Tout est dans [content/days.ts](content/days.ts). Un objet par date, avec un `type` (`letter`, `word`, `line`, `question`, `quote`, `memory`, `photo`, `voice`) et des options (`intro`, `reveal`, `signature`, `replyPrompt`…). Les explications sont en tête du fichier.
 
-- `date` — la date en haut de la lettre
-- `salutation` — la formule d'appel
-- `paragraphs` — un tableau de paragraphes, affichés dans l'ordre, qui apparaissent au fil du scroll
-- `closing` — la phrase avant la signature
-- `signature` — ton prénom
+```bash
+npm run check-content   # jours sans contenu, [À REMPLACER] restants, photos manquantes
+```
+
+Photos et notes vocales : crée le dossier `public/media/` et dépose-y le fichier avec un nom difficile à deviner (ex. `k3x9-2f.jpg`), puis `media: { kind: 'image', src: '/media/k3x9-2f.jpg' }`.
+
+Petits textes de l'interface : [shared/copy.ts](shared/copy.ts). Fuseau horaire, dates, prénom, phrases d'ouverture : [shared/config.ts](shared/config.ts).
 
 ## Lancer en local
 
 ```bash
 npm install
+cp .env.example .env.local     # facultatif en local
 npm run dev
 ```
 
-Ouvre l'URL affichée — teste sur ton téléphone en te connectant au même Wi-Fi (Vite affiche aussi une URL réseau type `http://192.168.x.x:5173`).
+Pour prévisualiser un autre jour, ajoute `FAKE_TODAY=2026-10-03` dans `.env.local` (ignoré en production) et relance.
 
-## Build de production
+## Déployer (Vercel)
 
-```bash
-npm run build
-```
+1. Pousse le dépôt sur GitHub et importe-le dans Vercel (preset Vite détecté).
+2. Ajoute une base **Upstash Redis** gratuite (Vercel → Storage → Upstash) : elle fournit les variables de stockage.
+3. Déploie (ou redéploie), puis teste sur ton téléphone.
 
-Le résultat statique est généré dans `dist/`. `npm run preview` permet de le tester avant déploiement.
-
-## Déployer
-
-### Vercel
-```bash
-npm i -g vercel
-vercel
-```
-
-### Netlify
-```bash
-npm i -g netlify-cli
-netlify deploy --prod
-```
-Build command : `npm run build` — Publish directory : `dist`.
-
-Ou glisse-dépose simplement le dossier `dist/` sur [app.netlify.com/drop](https://app.netlify.com/drop) pour un déploiement instantané sans compte.
-
-## Générer le QR code
-
-Une fois l'URL de déploiement obtenue :
+## Lire ses réponses
 
 ```bash
-npx qrcode "https://ton-url-ici.vercel.app" -o qrcode.png -w 1000
+npm run replies
 ```
 
-Génère un `qrcode.png` (1000×1000px) prêt à imprimer ou envoyer. Ou utilise n'importe quel générateur en ligne (ex. [qr-code-generator.com](https://www.qr-code-generator.com)).
+Lit les variables Upstash de `.env.local` (copie-les depuis Vercel).
 
-## Confidentialité
+## Comment c'est protégé
 
-La page n'est référencée nulle part (`meta robots: noindex, nofollow`) et n'a aucun lien vers un site principal — accessible uniquement via le lien/QR code direct.
-# foruu
+Il n'y a plus de mot de passe : le lien (ou le QR code) suffit. Le lien reste privé (`noindex`, `no-referrer`, aucun lien vers ailleurs).
+
+- Le contenu vit dans `content/`, importé uniquement par les fonctions `api/`. Il n'est pas dans le JavaScript envoyé au navigateur, et `/api/day` refuse (403) toute date postérieure à « aujourd'hui » dans le fuseau configuré.
+- Quiconque a le lien peut lire les jours déjà débloqués et écrire une réponse : ne partage pas l'URL.
+- Les photos/audios sont servis depuis `public/`. Leurs noms ne sont pas listés, mais quelqu'un qui connaît l'URL exacte peut les ouvrir.
