@@ -10,11 +10,19 @@ export class ApiError extends Error {
   }
 }
 
+const TIMEOUT_MS = 25_000
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, { credentials: 'same-origin', ...init })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new ApiError(res.status, data.error ?? 'error')
-  return data as T
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  try {
+    const res = await fetch(path, { credentials: 'same-origin', signal: controller.signal, ...init })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new ApiError(res.status, data.error ?? 'error')
+    return data as T
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 export const api = {
@@ -29,13 +37,20 @@ export const api = {
   uploadPhoto: async (date: string, file: File) => {
     const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
     const name = `replies/${date}-${crypto.randomUUID().slice(0, 8)}.${ext}`
-    const blob = await upload(name, file, {
-      access: 'public',
-      handleUploadUrl: '/api/upload',
-      contentType: file.type,
-      clientPayload: JSON.stringify({ date }),
-    })
-    return blob.url
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+    try {
+      const blob = await upload(name, file, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+        contentType: file.type,
+        clientPayload: JSON.stringify({ date }),
+        abortSignal: controller.signal,
+      })
+      return blob.url
+    } finally {
+      clearTimeout(timeout)
+    }
   },
   adminLogin: (password: string) =>
     call<{ ok: true }>('/api/admin/login', {
