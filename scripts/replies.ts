@@ -15,7 +15,8 @@ if (!dates.length) {
     const r = replies[date]
     console.log(`\n── ${formatLong(date)} ${'─'.repeat(30)}`)
     if (entry) console.log(`toi   › ${entry.content.replace(/\s+/g, ' ').slice(0, 90)}…`)
-    console.log(`elle  › ${r.text}`)
+    if (r.text) console.log(`elle  › ${r.text}`)
+    if (r.photo) console.log(`elle  › [photo] ${r.photo}`)
     console.log(`        (${new Date(r.updatedAt).toLocaleString('fr-FR')})`)
   }
   console.log(`\n${dates.length} réponse(s).\n`)

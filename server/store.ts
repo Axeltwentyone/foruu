@@ -5,12 +5,14 @@ import type { Reply } from '../shared/types.js'
 export interface Store {
   getAll(): Promise<Record<string, Reply>>
   get(date: string): Promise<Reply | null>
-  set(date: string, text: string): Promise<Reply>
+  set(date: string, text: string, photo?: string): Promise<Reply>
 }
 
-const upsert = (prev: Reply | null | undefined, text: string): Reply => {
+const upsert = (prev: Reply | null | undefined, text: string, photo?: string): Reply => {
   const now = new Date().toISOString()
-  return { text, createdAt: prev?.createdAt ?? now, updatedAt: now }
+  const reply: Reply = { text, createdAt: prev?.createdAt ?? now, updatedAt: now }
+  if (photo) reply.photo = photo
+  return reply
 }
 
 // --- Upstash Redis (REST) : pour la prod sur Vercel ---------------------------
@@ -37,8 +39,8 @@ function upstash(url: string, token: string): Store {
       const raw = (await cmd('HGET', KEY, date)) as string | null
       return raw ? (JSON.parse(raw) as Reply) : null
     },
-    async set(date, text) {
-      const reply = upsert(await this.get(date), text)
+    async set(date, text, photo) {
+      const reply = upsert(await this.get(date), text, photo)
       await cmd('HSET', KEY, date, JSON.stringify(reply))
       return reply
     },
@@ -60,9 +62,9 @@ function file(): Store {
     async get(date) {
       return (await read())[date] ?? null
     },
-    async set(date, text) {
+    async set(date, text, photo) {
       const all = await read()
-      all[date] = upsert(all[date], text)
+      all[date] = upsert(all[date], text, photo)
       await fs.mkdir(path.dirname(FILE), { recursive: true })
       await fs.writeFile(FILE, JSON.stringify(all, null, 2))
       return all[date]

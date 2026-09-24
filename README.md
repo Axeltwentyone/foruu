@@ -27,8 +27,11 @@ Pour prévisualiser un autre jour, ajoute `FAKE_TODAY=2026-10-03` dans `.env.loc
 ## Déployer (Vercel)
 
 1. Pousse le dépôt sur GitHub et importe-le dans Vercel (preset Vite détecté).
-2. Ajoute une base **Upstash Redis** gratuite (Vercel → Storage → Upstash) : elle fournit les variables de stockage.
-3. Déploie (ou redéploie), puis teste sur ton téléphone.
+2. Ajoute une base **Upstash Redis** gratuite (Vercel → Storage → Upstash) : elle fournit les variables de stockage pour ses réponses.
+3. Ajoute aussi **Vercel Blob** (Vercel → Storage → Blob → Create, plan gratuit) : elle fournit la variable `BLOB_READ_WRITE_TOKEN`, pour les photos qu'elle joint à ses réponses.
+4. Déploie (ou redéploie), puis teste sur ton téléphone.
+
+Sans Vercel Blob, elle peut quand même répondre par texte ; seul le bouton « Ajouter une photo » échouera.
 
 ## Lire ses réponses
 
@@ -36,7 +39,7 @@ Pour prévisualiser un autre jour, ajoute `FAKE_TODAY=2026-10-03` dans `.env.loc
 npm run replies
 ```
 
-Lit les variables Upstash de `.env.local` (copie-les depuis Vercel).
+Lit les variables Upstash de `.env.local` (copie-les depuis Vercel). Les photos jointes s'affichent comme un lien : ouvre-le pour la voir.
 
 ## Comment c'est protégé
 
@@ -44,4 +47,5 @@ Il n'y a plus de mot de passe : le lien (ou le QR code) suffit. Le lien reste pr
 
 - Le contenu vit dans `content/`, importé uniquement par les fonctions `api/`. Il n'est pas dans le JavaScript envoyé au navigateur, et `/api/day` refuse (403) toute date postérieure à « aujourd'hui » dans le fuseau configuré.
 - Quiconque a le lien peut lire les jours déjà débloqués et écrire une réponse : ne partage pas l'URL.
-- Les photos/audios sont servis depuis `public/`. Leurs noms ne sont pas listés, mais quelqu'un qui connaît l'URL exacte peut les ouvrir.
+- Les photos/audios que tu ajoutes toi-même sont servis depuis `public/`. Leurs noms ne sont pas listés, mais quelqu'un qui connaît l'URL exacte peut les ouvrir.
+- Les photos qu'elle envoie dans ses réponses sont stockées sur Vercel Blob, avec un nom aléatoire imprévisible ; personne ne peut les retrouver sans le lien exact.

@@ -42,6 +42,8 @@ export interface DayEntry {
 
 export interface Reply {
   text: string
+  /** URL de la photo qu'elle a jointe à sa réponse, s'il y en a une. */
+  photo?: string
   createdAt: string
   updatedAt: string
 }
