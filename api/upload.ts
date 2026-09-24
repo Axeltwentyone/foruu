@@ -34,7 +34,6 @@ export async function POST(req: Request) {
     return json({ url: blob.url })
   } catch (e) {
     console.error('upload failed', e)
-    // TODO: retirer `detail` une fois le diagnostic terminé.
-    return json({ error: 'upload_failed', detail: e instanceof Error ? e.message : String(e) }, 503)
+    return json({ error: 'upload_failed' }, 503)
   }
 }
