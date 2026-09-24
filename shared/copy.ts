@@ -34,6 +34,16 @@ export const copy = {
     error: "Ça n'a pas marché. Réessaie dans un instant.",
   },
   locked: 'Pas encore.',
+  admin: {
+    kicker: 'Privé',
+    prompt: 'Quel est le mot ?',
+    button: 'Entrer',
+    error: "Ce n'est pas ça.",
+    title: 'Ses réponses',
+    empty: 'Rien pour l’instant.',
+    photosOnly: 'Avec photo seulement',
+    back: 'Retour',
+  },
   counter: (n: number) => {
     if (n === 0) return 'Dernier jour de cette année.'
     if (n === 1) return 'Encore 1 jour ensemble cette année.'

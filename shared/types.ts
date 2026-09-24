@@ -67,3 +67,10 @@ export interface DayResponse {
   entry: DayEntry | null
   reply: Reply | null
 }
+
+/** Une réponse avec sa date et un aperçu du message du jour, pour la page admin. */
+export interface AdminReplyItem {
+  date: string
+  reply: Reply
+  entryTitle: string | null
+}

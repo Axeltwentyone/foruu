@@ -3,6 +3,7 @@ import { CONFIG } from '@shared/config'
 import { copy } from '@shared/copy'
 import { formatDayMonth } from '@shared/dates'
 import type { StateResponse } from '@shared/types'
+import Admin from './components/Admin'
 import DayView from './components/DayView'
 import History from './components/History'
 import { api } from './lib/api'
@@ -49,6 +50,8 @@ export default function App() {
   }
 
   const { state } = boot
+
+  if (route.kind === 'admin') return <Admin onClose={back} />
 
   if (route.kind === 'history' && state.phase !== 'before') {
     return <History state={state} onOpen={go} onClose={back} />

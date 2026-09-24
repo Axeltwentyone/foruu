@@ -1,5 +1,5 @@
 import { upload } from '@vercel/blob/client'
-import type { DayResponse, Reply, StateResponse } from '@shared/types'
+import type { AdminReplyItem, DayResponse, Reply, StateResponse } from '@shared/types'
 
 export class ApiError extends Error {
   constructor(
@@ -37,4 +37,11 @@ export const api = {
     })
     return blob.url
   },
+  adminLogin: (password: string) =>
+    call<{ ok: true }>('/api/admin/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password }),
+    }),
+  adminReplies: () => call<{ items: AdminReplyItem[] }>('/api/admin/replies'),
 }

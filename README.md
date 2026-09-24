@@ -38,7 +38,8 @@ Tester l'envoi de photo en local demande aussi `BLOB_READ_WRITE_TOKEN` dans `.en
    npx web-push generate-vapid-keys
    ```
    Ajoute `VITE_VAPID_PUBLIC_KEY` et `VAPID_PRIVATE_KEY` dans Environment Variables (Production), et une valeur aléatoire pour `CRON_SECRET` (ex. `openssl rand -hex 24`).
-5. Déploie (ou redéploie), puis teste sur ton téléphone.
+5. Choisis un mot de passe pour la page admin et ajoute `ADMIN_PASSWORD` + `ADMIN_SESSION_SECRET` (une valeur aléatoire, ex. `openssl rand -hex 24`).
+6. Déploie (ou redéploie), puis teste sur ton téléphone.
 
 Sans Vercel Blob, elle peut quand même répondre par texte ; seul le bouton « Ajouter une photo » échouera. Sans les clés VAPID, le site fonctionne pareil ; seul le bouton « Me prévenir chaque jour » ne fera rien.
 
@@ -46,16 +47,18 @@ Sans Vercel Blob, elle peut quand même répondre par texte ; seul le bouton « 
 
 Le cron `/api/cron/notify` (défini dans `vercel.json`) tourne une fois par jour et envoie une notification générique (« Il y a quelque chose pour toi aujourd'hui. », sans révéler le contenu) à tous les appareils abonnés. Réglages :
 
-- **Heure d'envoi** : `vercel.json` → `crons[0].schedule`, en heure UTC. Calé par défaut sur 8h heure d'hiver (voir le commentaire dans `shared/config.ts`).
+- **Heure d'envoi** : `vercel.json` → `crons[0].schedule`, en heure UTC. Calé par défaut sur 11h heure d'été (voir le commentaire dans `shared/config.ts`).
 - **Sur iPhone**, les notifications web ne marchent que si le site a été ajouté à l'écran d'accueil (Safari → Partager → Sur l'écran d'accueil) — pas juste ouvert dans l'onglet Safari — et demandent iOS 16.4 ou plus récent. Le bouton affiche un rappel si ce n'est pas encore fait.
 - **Sur le plan Hobby de Vercel**, un cron ne peut tourner qu'une fois par jour maximum — largement suffisant ici.
 
 ## Lire ses réponses
 
+**Sur le site**, va sur `/#admin` — une page protégée par mot de passe (`ADMIN_PASSWORD`, différent du reste du site), avec toutes ses réponses et une case pour n'afficher que celles avec une photo. Aucun lien n'y mène depuis le reste de l'app : il faut taper l'adresse.
+
+**En ligne de commande** :
 ```bash
 npm run replies
 ```
-
 Lit les variables Upstash de `.env.local` (copie-les depuis Vercel). Les photos jointes s'affichent comme un lien : ouvre-le pour la voir.
 
 ## Comment c'est protégé
@@ -67,3 +70,4 @@ Il n'y a plus de mot de passe : le lien (ou le QR code) suffit. Le lien reste pr
 - Les photos/audios que tu ajoutes toi-même sont servis depuis `public/`. Leurs noms ne sont pas listés, mais quelqu'un qui connaît l'URL exacte peut les ouvrir.
 - Les photos qu'elle envoie dans ses réponses sont stockées sur Vercel Blob, avec un nom aléatoire imprévisible ; personne ne peut les retrouver sans le lien exact.
 - Quiconque a le lien peut aussi s'abonner aux notifications (même limite que pour lire/répondre : c'est le lien qui protège, pas un compte).
+- La page `/#admin` (ses réponses) a son propre mot de passe (`ADMIN_PASSWORD`), séparé de tout le reste, avec un cookie de session (~90 jours) après connexion.

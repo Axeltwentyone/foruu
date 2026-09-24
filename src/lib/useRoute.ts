@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { isISODate } from '@shared/dates'
 
-export type Route = { kind: 'home' } | { kind: 'history' } | { kind: 'day'; date: string }
+export type Route = { kind: 'home' } | { kind: 'history' } | { kind: 'day'; date: string } | { kind: 'admin' }
 
 const parse = (): Route => {
   const h = location.hash.slice(1)
   if (h === 'nos-jours') return { kind: 'history' }
+  if (h === 'admin') return { kind: 'admin' }
   if (isISODate(h)) return { kind: 'day', date: h }
   return { kind: 'home' }
 }
