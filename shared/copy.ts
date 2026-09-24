@@ -30,6 +30,7 @@ export const copy = {
     on: 'Notifications activées.',
     denied: 'Notifications bloquées — change ça dans les réglages de ton navigateur si tu changes d’avis.',
     iosHint: 'Ajoute d’abord ce site à ton écran d’accueil (partager → sur l’écran d’accueil) pour activer les notifications.',
+    iosUnsupported: 'Les notifications ne sont pas disponibles ici pour l’instant.',
     error: "Ça n'a pas marché. Réessaie dans un instant.",
   },
   locked: 'Pas encore.',

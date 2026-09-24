@@ -15,6 +15,15 @@ export const isStandalone = () =>
 export const pushSupported = () =>
   'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && !!VAPID_PUBLIC_KEY
 
+/** Pour comprendre pourquoi pushSupported() est faux (diagnostic, jamais affiché tel quel). */
+export function unsupportedReason(): string {
+  if (!('serviceWorker' in navigator)) return 'serviceWorker manquant'
+  if (!('PushManager' in window)) return 'PushManager manquant'
+  if (!('Notification' in window)) return 'Notification manquant'
+  if (!VAPID_PUBLIC_KEY) return 'clé VAPID absente du build'
+  return 'inconnu'
+}
+
 /** Enregistre le service worker (à appeler une fois, au chargement). N'échoue jamais bruyamment. */
 export async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return
