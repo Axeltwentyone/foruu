@@ -5,8 +5,8 @@ import { getStore } from '../server/store.js'
 
 const MAX_LENGTH = 5000
 
-// Doit venir de saveReplyPhoto() : /uploads/… en dev, ou un blob Vercel en prod.
-const isOwnPhotoUrl = (url: string) => url.startsWith('/uploads/') || /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//.test(url)
+// Doit venir d'un upload direct vers notre store Vercel Blob (api/upload.ts).
+const isOwnPhotoUrl = (url: string) => /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//.test(url)
 
 export async function POST(req: Request) {
   const body = await readJson<{ date?: string; text?: string; photo?: string }>(req)

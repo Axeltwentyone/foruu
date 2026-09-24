@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { copy } from '@shared/copy'
 import { CONFIG } from '@shared/config'
 import type { Reply as ReplyData } from '@shared/types'
-import { api, ApiError } from '../lib/api'
+import { api } from '../lib/api'
 import { getDraft, setDraft } from '../lib/storage'
 
 interface Props {
@@ -29,7 +29,7 @@ export default function Reply({ date, prompt, initial, onSaved }: Props) {
   const [text, setText] = useState(() => initial?.text ?? getDraft(date))
   const [photo, setPhoto] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [status, setStatus] = useState<'idle' | 'uploading' | 'sending' | 'error'>('idle')
+  const [status, setStatus] = useState<'idle' | 'converting' | 'uploading' | 'sending' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
   const [flash, setFlash] = useState(false)
   const area = useRef<HTMLTextAreaElement>(null)
@@ -59,11 +59,26 @@ export default function Reply({ date, prompt, initial, onSaved }: Props) {
     if (!saved) setDraft(date, v)
   }
 
-  const pickPhoto = (file: File | undefined) => {
+  const pickPhoto = async (file: File | undefined) => {
     if (!file) return
     setError(null)
     if (file.size > MAX_BYTES) return setError(copy.photoTooBig)
     if (!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) return setError(copy.photoBadType)
+
+    if (/^image\/hei[cf]$/i.test(file.type)) {
+      // La plupart des navigateurs (hors Safari/Apple) n'affichent pas le HEIC des iPhones.
+      setStatus('converting')
+      try {
+        const heic2any = (await import('heic2any')).default
+        const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+        file = new File([Array.isArray(out) ? out[0] : out], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })
+      } catch {
+        setStatus('idle')
+        return setError(copy.photoBadType)
+      }
+      setStatus('idle')
+    }
+
     setPhoto(file)
     setPreview(URL.createObjectURL(file))
   }
@@ -82,7 +97,7 @@ export default function Reply({ date, prompt, initial, onSaved }: Props) {
       let photoUrl: string | undefined
       if (photo) {
         setStatus('uploading')
-        photoUrl = (await api.uploadPhoto(date, photo)).url
+        photoUrl = await api.uploadPhoto(date, photo)
       }
       setStatus('sending')
       const { reply } = await api.reply(date, value, photoUrl)
@@ -95,12 +110,18 @@ export default function Reply({ date, prompt, initial, onSaved }: Props) {
       onSaved()
     } catch (e) {
       setStatus('error')
-      const code = e instanceof ApiError ? e.code : null
-      setError(code === 'bad_size' ? copy.photoTooBig : code === 'bad_type' ? copy.photoBadType : copy.replyError)
+      const msg = e instanceof Error ? e.message.toLowerCase() : ''
+      setError(
+        msg.includes('large') || msg.includes('size')
+          ? copy.photoTooBig
+          : msg.includes('content type') || msg.includes('not allowed')
+            ? copy.photoBadType
+            : copy.replyError,
+      )
     }
   }
 
-  const busy = status === 'uploading' || status === 'sending'
+  const busy = status === 'converting' || status === 'uploading' || status === 'sending'
 
   return (
     <section className="border-t border-rule pt-10">
@@ -176,12 +197,12 @@ export default function Reply({ date, prompt, initial, onSaved }: Props) {
                 className="hidden"
                 onChange={(e) => pickPhoto(e.target.files?.[0])}
               />
-              <button type="button" className="quiet-button" onClick={() => fileInput.current?.click()}>
+              <button type="button" className="quiet-button" disabled={busy} onClick={() => fileInput.current?.click()}>
                 {copy.addPhoto}
               </button>
             </div>
             <p role="alert" className="font-serif text-[1.25rem] text-accent">
-              {status === 'uploading' ? copy.photoSending : error}
+              {status === 'converting' ? copy.photoConverting : status === 'uploading' ? copy.photoSending : error}
             </p>
             <div className="flex items-center gap-5">
               {saved && (
@@ -198,7 +219,13 @@ export default function Reply({ date, prompt, initial, onSaved }: Props) {
                 </button>
               )}
               <button className="quiet-button" disabled={(!text.trim() && !photo) || busy} onClick={send}>
-                {status === 'uploading' ? copy.photoSending : status === 'sending' ? copy.replySending : copy.replyButton}
+                {status === 'uploading'
+                  ? copy.photoSending
+                  : status === 'sending'
+                    ? copy.replySending
+                    : status === 'converting'
+                      ? copy.photoConverting
+                      : copy.replyButton}
                 <span aria-hidden>→</span>
               </button>
             </div>

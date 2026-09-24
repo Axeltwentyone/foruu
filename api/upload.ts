@@ -1,30 +1,40 @@
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client'
 import { isISODate } from '../shared/dates.js'
 import { getToday, inRange } from '../server/clock.js'
-import { isAcceptedImage, MAX_UPLOAD_BYTES, saveReplyPhoto } from '../server/images.js'
+import { MAX_UPLOAD_BYTES } from '../server/images.js'
 import { json } from '../server/http.js'
 
-export async function POST(req: Request) {
-  let form: FormData
-  try {
-    form = await req.formData()
-  } catch {
-    return json({ error: 'bad_request' }, 400)
-  }
-
-  const date = form.get('date')
-  const file = form.get('file')
-  if (!isISODate(date) || !inRange(date)) return json({ error: 'bad_date' }, 400)
-  if (date > getToday()) return json({ error: 'locked' }, 403)
-  if (!(file instanceof File)) return json({ error: 'no_file' }, 400)
-  if (file.size === 0 || file.size > MAX_UPLOAD_BYTES) return json({ error: 'bad_size' }, 400)
-  if (!isAcceptedImage(file.type)) return json({ error: 'bad_type' }, 400)
+// Upload direct navigateur → Vercel Blob : le fichier ne passe jamais par cette
+// fonction (qui ne fait que délivrer un jeton signé), donc pas de limite de
+// taille de requête serverless à contourner.
+export async function POST(request: Request) {
+  const body = (await request.json()) as HandleUploadBody
 
   try {
-    const bytes = new Uint8Array(await file.arrayBuffer())
-    const url = await saveReplyPhoto(date, bytes, file.type)
-    return json({ url })
+    const result = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (_pathname, clientPayload) => {
+        let date: unknown
+        try {
+          date = JSON.parse(clientPayload ?? '{}').date
+        } catch {
+          date = null
+        }
+        if (!isISODate(date) || !inRange(date)) throw new Error('bad_date')
+        if (date > getToday()) throw new Error('locked')
+
+        return {
+          allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp'],
+          maximumSizeInBytes: MAX_UPLOAD_BYTES,
+          addRandomSuffix: false,
+        }
+      },
+    })
+    return json(result)
   } catch (e) {
-    console.error('upload failed', e)
-    return json({ error: 'upload_failed' }, 503)
+    console.error('upload token failed', e)
+    const message = e instanceof Error ? e.message : 'upload_failed'
+    return json({ error: message }, message === 'bad_date' ? 400 : message === 'locked' ? 403 : 400)
   }
 }

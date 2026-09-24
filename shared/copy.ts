@@ -12,6 +12,7 @@ export const copy = {
   addPhoto: 'Ajouter une photo',
   removePhoto: 'Retirer la photo',
   photoSending: 'Envoi de la photo…',
+  photoConverting: 'Un instant…',
   photoTooBig: 'Cette photo est trop lourde (15 Mo max).',
   photoBadType: "Ce type de fichier n'est pas pris en charge.",
   yourReply: 'Ta réponse',
