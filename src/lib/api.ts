@@ -1,4 +1,3 @@
-import { upload } from '@vercel/blob/client'
 import type { AdminReplyItem, DayResponse, Reply, StateResponse } from '@shared/types'
 
 export class ApiError extends Error {
@@ -35,22 +34,11 @@ export const api = {
       body: JSON.stringify({ date, text, photo }),
     }),
   uploadPhoto: async (date: string, file: File) => {
-    const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
-    const name = `replies/${date}-${crypto.randomUUID().slice(0, 8)}.${ext}`
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
-    try {
-      const blob = await upload(name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/upload',
-        contentType: file.type,
-        clientPayload: JSON.stringify({ date }),
-        abortSignal: controller.signal,
-      })
-      return blob.url
-    } finally {
-      clearTimeout(timeout)
-    }
+    const form = new FormData()
+    form.set('date', date)
+    form.set('file', file)
+    const { url } = await call<{ url: string }>('/api/upload', { method: 'POST', body: form })
+    return url
   },
   adminLogin: (password: string) =>
     call<{ ok: true }>('/api/admin/login', {
