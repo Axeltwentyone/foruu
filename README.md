@@ -26,13 +26,13 @@ npm run dev
 
 Pour prévisualiser un autre jour, ajoute `FAKE_TODAY=2026-10-03` dans `.env.local` (ignoré en production) et relance.
 
-Tester l'envoi de photo en local demande aussi `BLOB_READ_WRITE_TOKEN` dans `.env.local` (voir `.env.example`) : sans lui, seul le texte fonctionne. Les photos passent directement du navigateur vers Vercel Blob (pas de limite de taille de requête serverless à gérer), donc même en dev, une vraie photo test atterrit dans le vrai store — supprimable depuis Vercel.
+Tester l'envoi de photo en local demande aussi `BLOB_READ_WRITE_TOKEN` dans `.env.local` (voir `.env.example`) : sans lui, seul le texte fonctionne. Les photos sont réduites côté navigateur (1920px max, ~1 Mo) avant d'être envoyées à notre fonction `/api/upload`, qui les transmet à Vercel Blob — donc même en dev, une vraie photo test atterrit dans le vrai store — supprimable depuis Vercel.
 
 ## Déployer (Vercel)
 
 1. Pousse le dépôt sur GitHub et importe-le dans Vercel (preset Vite détecté).
 2. Ajoute une base **Upstash Redis** gratuite (Vercel → Storage → Upstash) : elle fournit les variables de stockage pour ses réponses.
-3. Ajoute aussi **Vercel Blob** (Vercel → Storage → Blob → Create, plan gratuit) : vérifie qu'elle ajoute bien `BLOB_READ_WRITE_TOKEN` dans Environment Variables — sinon copie-la manuellement depuis l'onglet `.env.local` de la page du store.
+3. Ajoute aussi **Vercel Blob** (Vercel → Storage → Create Database → Blob, plan gratuit). **Choisis bien l'accès « Public »** à la création (pas « Private ») — ce réglage ne peut plus être changé ensuite, et les photos ne s'affichent que si le store est public. Vérifie que `BLOB_READ_WRITE_TOKEN` est bien ajoutée dans Environment Variables — sinon copie-la manuellement depuis l'onglet `.env.local` de la page du store.
 4. Génère une paire de clés VAPID (une seule fois, sur ta machine) :
    ```bash
    npx web-push generate-vapid-keys
