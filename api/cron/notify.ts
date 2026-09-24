@@ -16,8 +16,12 @@ export async function GET(req: Request) {
   if (getPhase(today) !== 'running') return json({ skipped: 'not_running' })
   if (!days.some((d) => d.date === today)) return json({ skipped: 'no_content' })
 
-  const firstRun = await markNotifiedOnce(today)
-  if (!firstRun) return json({ skipped: 'already_sent' })
+  // ?force=1 : renvoie un test même si le jour a déjà été notifié (toujours protégé par CRON_SECRET).
+  const forced = new URL(req.url).searchParams.get('force') === '1'
+  if (!forced) {
+    const firstRun = await markNotifiedOnce(today)
+    if (!firstRun) return json({ skipped: 'already_sent' })
+  }
 
   try {
     const result = await sendPushToAll({
