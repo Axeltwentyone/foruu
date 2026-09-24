@@ -3,6 +3,7 @@ import { copy } from '@shared/copy'
 import { CONFIG } from '@shared/config'
 import type { Reply as ReplyData } from '@shared/types'
 import { api } from '../lib/api'
+import { shrinkImage } from '../lib/image'
 import { getDraft, setDraft } from '../lib/storage'
 
 interface Props {
@@ -65,19 +66,21 @@ export default function Reply({ date, prompt, initial, onSaved }: Props) {
     if (file.size > MAX_BYTES) return setError(copy.photoTooBig)
     if (!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) return setError(copy.photoBadType)
 
-    if (/^image\/hei[cf]$/i.test(file.type)) {
-      // La plupart des navigateurs (hors Safari/Apple) n'affichent pas le HEIC des iPhones.
-      setStatus('converting')
-      try {
+    setStatus('converting')
+    try {
+      if (/^image\/hei[cf]$/i.test(file.type)) {
+        // La plupart des navigateurs (hors Safari/Apple) n'affichent pas le HEIC des iPhones.
         const heic2any = (await import('heic2any')).default
         const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
         file = new File([Array.isArray(out) ? out[0] : out], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' })
-      } catch {
-        setStatus('idle')
-        return setError(copy.photoBadType)
       }
+      // Réduit une photo de téléphone (souvent plusieurs Mo) pour un envoi rapide.
+      file = await shrinkImage(file)
+    } catch {
       setStatus('idle')
+      return setError(copy.photoBadType)
     }
+    setStatus('idle')
 
     setPhoto(file)
     setPreview(URL.createObjectURL(file))
