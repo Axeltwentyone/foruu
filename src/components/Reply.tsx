@@ -112,6 +112,7 @@ export default function Reply({ date, prompt, initial, onSaved }: Props) {
       removePhoto()
       onSaved()
     } catch (e) {
+      console.error('envoi de la réponse/photo échoué :', e)
       setStatus('error')
       const msg = e instanceof Error ? e.message.toLowerCase() : ''
       setError(
