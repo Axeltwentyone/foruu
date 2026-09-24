@@ -25,6 +25,13 @@ export const copy = {
     body: 'Les jours restent là, tous. Tu peux les relire quand tu veux.',
   },
   emptyDay: 'Rien ici pour ce jour-là.',
+  notify: {
+    ask: 'Me prévenir chaque jour',
+    on: 'Notifications activées.',
+    denied: 'Notifications bloquées — change ça dans les réglages de ton navigateur si tu changes d’avis.',
+    iosHint: 'Ajoute d’abord ce site à ton écran d’accueil (partager → sur l’écran d’accueil) pour activer les notifications.',
+    error: "Ça n'a pas marché. Réessaie dans un instant.",
+  },
   locked: 'Pas encore.',
   counter: (n: number) => {
     if (n === 0) return 'Dernier jour de cette année.'

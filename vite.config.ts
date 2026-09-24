@@ -2,6 +2,7 @@ import path from 'node:path'
 import { Readable } from 'node:stream'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // En développement, sert les fonctions de /api avec le même code qu'en production (Vercel).
 function devApi(): Plugin {
@@ -10,7 +11,7 @@ function devApi(): Plugin {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url ?? '/', 'http://localhost')
-        const m = url.pathname.match(/^\/api\/([a-z]+)$/)
+        const m = url.pathname.match(/^\/api\/([a-z0-9/-]+)$/)
         if (!m) return next()
         try {
           const mod = await server.ssrLoadModule(`/api/${m[1]}.ts`)
@@ -47,7 +48,36 @@ function devApi(): Plugin {
 export default defineConfig(({ mode }) => {
   Object.assign(process.env, loadEnv(mode, process.cwd(), ''))
   return {
-    plugins: [react(), devApi()],
+    plugins: [
+      react(),
+      devApi(),
+      VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
+        injectRegister: null, // on enregistre le service worker nous-mêmes (voir src/lib/push.ts)
+        manifest: {
+          name: 'Nos jours',
+          short_name: 'Nos jours',
+          description: 'Un message par jour, rien que pour toi.',
+          lang: 'fr',
+          start_url: '/',
+          scope: '/',
+          display: 'standalone',
+          background_color: '#e9d9b4',
+          theme_color: '#e9d9b4',
+          icons: [
+            { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+            { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          ],
+        },
+        injectManifest: {
+          globPatterns: ['**/*.{js,css,html,woff,woff2}'],
+        },
+        devOptions: { enabled: true, type: 'module' },
+      }),
+    ],
     resolve: { alias: { '@shared': path.resolve(process.cwd(), 'shared') } },
   }
 })

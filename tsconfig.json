@@ -35,5 +35,6 @@
     "scripts",
     "vite.config.ts",
     "tailwind.config.ts"
-  ]
+  ],
+  "exclude": ["src/sw.ts"]
 }

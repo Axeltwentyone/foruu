@@ -1,6 +1,6 @@
 # Nos jours
 
-Un message par jour, du 21 septembre au 31 décembre. Chaque jour se débloque à minuit dans son fuseau horaire ; les jours futurs ne quittent jamais le serveur.
+Un message par jour, du 21 septembre au 31 décembre. Chaque jour se débloque à minuit dans son fuseau horaire ; les jours futurs ne quittent jamais le serveur. C'est une PWA : elle peut l'ajouter à son écran d'accueil et recevoir une notification chaque jour.
 
 ## Écrire les jours
 
@@ -13,6 +13,8 @@ npm run check-content   # jours sans contenu, [À REMPLACER] restants, photos ma
 Photos et notes vocales : crée le dossier `public/media/` et dépose-y le fichier avec un nom difficile à deviner (ex. `k3x9-2f.jpg`), puis `media: { kind: 'image', src: '/media/k3x9-2f.jpg' }`.
 
 Petits textes de l'interface : [shared/copy.ts](shared/copy.ts). Fuseau horaire, dates, prénom, phrases d'ouverture : [shared/config.ts](shared/config.ts).
+
+Icône de l'app (écran d'accueil, notifications) : [public/icons/](public/icons/) — un simple pli de lettre généré par défaut, remplaçable par tes propres PNG en gardant les mêmes noms et tailles (192×192, 512×512, 512×512 « maskable »).
 
 ## Lancer en local
 
@@ -30,10 +32,23 @@ Tester l'envoi de photo en local demande aussi `BLOB_READ_WRITE_TOKEN` dans `.en
 
 1. Pousse le dépôt sur GitHub et importe-le dans Vercel (preset Vite détecté).
 2. Ajoute une base **Upstash Redis** gratuite (Vercel → Storage → Upstash) : elle fournit les variables de stockage pour ses réponses.
-3. Ajoute aussi **Vercel Blob** (Vercel → Storage → Blob → Create, plan gratuit) : elle fournit la variable `BLOB_READ_WRITE_TOKEN`, pour les photos qu'elle joint à ses réponses.
-4. Déploie (ou redéploie), puis teste sur ton téléphone.
+3. Ajoute aussi **Vercel Blob** (Vercel → Storage → Blob → Create, plan gratuit) : vérifie qu'elle ajoute bien `BLOB_READ_WRITE_TOKEN` dans Environment Variables — sinon copie-la manuellement depuis l'onglet `.env.local` de la page du store.
+4. Génère une paire de clés VAPID (une seule fois, sur ta machine) :
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+   Ajoute `VITE_VAPID_PUBLIC_KEY` et `VAPID_PRIVATE_KEY` dans Environment Variables (Production), et une valeur aléatoire pour `CRON_SECRET` (ex. `openssl rand -hex 24`).
+5. Déploie (ou redéploie), puis teste sur ton téléphone.
 
-Sans Vercel Blob, elle peut quand même répondre par texte ; seul le bouton « Ajouter une photo » échouera.
+Sans Vercel Blob, elle peut quand même répondre par texte ; seul le bouton « Ajouter une photo » échouera. Sans les clés VAPID, le site fonctionne pareil ; seul le bouton « Me prévenir chaque jour » ne fera rien.
+
+### Notifications push
+
+Le cron `/api/cron/notify` (défini dans `vercel.json`) tourne une fois par jour et envoie une notification générique (« Il y a quelque chose pour toi aujourd'hui. », sans révéler le contenu) à tous les appareils abonnés. Réglages :
+
+- **Heure d'envoi** : `vercel.json` → `crons[0].schedule`, en heure UTC. Calé par défaut sur 8h heure d'hiver (voir le commentaire dans `shared/config.ts`).
+- **Sur iPhone**, les notifications web ne marchent que si le site a été ajouté à l'écran d'accueil (Safari → Partager → Sur l'écran d'accueil) — pas juste ouvert dans l'onglet Safari — et demandent iOS 16.4 ou plus récent. Le bouton affiche un rappel si ce n'est pas encore fait.
+- **Sur le plan Hobby de Vercel**, un cron ne peut tourner qu'une fois par jour maximum — largement suffisant ici.
 
 ## Lire ses réponses
 
@@ -51,3 +66,4 @@ Il n'y a plus de mot de passe : le lien (ou le QR code) suffit. Le lien reste pr
 - Quiconque a le lien peut lire les jours déjà débloqués et écrire une réponse : ne partage pas l'URL.
 - Les photos/audios que tu ajoutes toi-même sont servis depuis `public/`. Leurs noms ne sont pas listés, mais quelqu'un qui connaît l'URL exacte peut les ouvrir.
 - Les photos qu'elle envoie dans ses réponses sont stockées sur Vercel Blob, avec un nom aléatoire imprévisible ; personne ne peut les retrouver sans le lien exact.
+- Quiconque a le lien peut aussi s'abonner aux notifications (même limite que pour lire/répondre : c'est le lien qui protège, pas un compte).

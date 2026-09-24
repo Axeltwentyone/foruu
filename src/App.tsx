@@ -6,6 +6,7 @@ import type { StateResponse } from '@shared/types'
 import DayView from './components/DayView'
 import History from './components/History'
 import { api } from './lib/api'
+import { registerServiceWorker } from './lib/push'
 import { useRoute } from './lib/useRoute'
 
 type Boot = { s: 'loading' } | { s: 'error' } | { s: 'ready'; state: StateResponse }
@@ -29,6 +30,7 @@ export default function App() {
 
   useEffect(() => {
     void refresh()
+    void registerServiceWorker()
     const onVisible = () => document.visibilityState === 'visible' && void refresh()
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)

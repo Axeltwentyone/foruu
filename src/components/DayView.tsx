@@ -7,6 +7,7 @@ import { api, ApiError } from '../lib/api'
 import { hasSeen, markSeen } from '../lib/storage'
 import Intro from './Intro'
 import Message from './Message'
+import NotifyPrompt from './NotifyPrompt'
 import Reply from './Reply'
 
 interface Props {
@@ -108,6 +109,7 @@ export default function DayView({ date, today, daysLeft, onHistory, onReplied }:
       {revealed && (
         <footer className="rise mt-24" style={{ animationDelay: '0.6s' }}>
           <p className="label">{copy.counter(daysLeft)}</p>
+          <NotifyPrompt />
         </footer>
       )}
     </div>

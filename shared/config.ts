@@ -10,6 +10,12 @@ export const CONFIG = {
   end: '2026-12-31',
 
   sender: 'Ton amoureux',
+
+  // Heure locale visée pour la notification quotidienne, à titre indicatif :
+  // le cron qui l'envoie tourne à heure UTC fixe (vercel.json, "0 13 * * *"),
+  // réglé pour tomber à 8h heure d'hiver (EST). En heure d'été (EDT, jusqu'à
+  // début novembre), elle arrivera vers 9h. Change le cron pour ajuster.
+  wakeHour: 8,
 } as const
 
 export const INTROS = [
