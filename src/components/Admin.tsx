@@ -21,23 +21,31 @@ export default function Admin({ onClose }: { onClose: () => void }) {
   const [load, setLoad] = useState<Load>({ s: 'loading' })
   const [photosOnly, setPhotosOnly] = useState(false)
 
-  const fetchItems = () => {
+  const fetchItems = (retryOn401 = false) => {
     setLoad({ s: 'loading' })
     api
       .adminReplies()
       .then(({ items }) => setLoad({ s: 'ready', items }))
-      .catch((e) => setLoad(e instanceof ApiError && e.status === 401 ? { s: 'gate' } : { s: 'error' }))
+      .catch((e) => {
+        if (e instanceof ApiError && e.status === 401) {
+          // Juste après une connexion réussie, le cookie met parfois un instant à être
+          // pris en compte (observé sur Safari iOS) : on retente une fois avant d'abandonner.
+          if (retryOn401) return void setTimeout(() => fetchItems(false), 400)
+          return setLoad({ s: 'gate' })
+        }
+        setLoad({ s: 'error' })
+      })
   }
 
-  useEffect(fetchItems, [])
+  useEffect(() => fetchItems(), [])
 
   if (load.s === 'loading') return <div className="min-h-[100dvh]" />
-  if (load.s === 'gate') return <AdminGate onAuthed={fetchItems} />
+  if (load.s === 'gate') return <AdminGate onAuthed={() => fetchItems(true)} />
   if (load.s === 'error') {
     return (
       <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col justify-center px-8 pb-24">
         <p className="font-display text-4xl italic">Impossible de charger.</p>
-        <button className="quiet-button mt-8 self-start" onClick={fetchItems}>
+        <button className="quiet-button mt-8 self-start" onClick={() => fetchItems()}>
           Réessayer
         </button>
       </div>
